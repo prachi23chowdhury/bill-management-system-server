@@ -26,13 +26,21 @@ async function run() {
     const db = client.db("bill_db");
 const billsCollection = db.collection("bills");
 
+// find one
+ app.get("/bills", async(req,res) =>{
+  const cursor = billsCollection.find();
+        const result = await cursor.toArray();
+        res.send(result);
+    })
+
+    // insert
 app.post("/bills", async(req, res) =>{
     const newBill = req.body;
     const result = await billsCollection.insertOne(newBill);
     res.send(result)
 })
 
-
+// update
 app.patch('/bills/:id', async(req, res)=>{
   const id = req.params.id;
  const updateBill =req.body;
@@ -49,7 +57,7 @@ app.patch('/bills/:id', async(req, res)=>{
     res.send(result)
 })
 
-
+// delete
 app.delete('/bills/:id', async(req, res)=>{
   const id = req.params.id;
   const query = { _id: new ObjectId(id)}
