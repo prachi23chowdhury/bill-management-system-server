@@ -25,6 +25,25 @@ async function run() {
 
     const db = client.db("bill_db");
 const billsCollection = db.collection("bills");
+const userCollection = db.collection("users");
+
+
+    // users API 
+     app.post("/users", async(req,res) =>{
+      const  newUser =req.body;
+      const  email =req.body.email;
+      const query = {
+        email :email
+      }
+      const existingUser = await userCollection.findOne(query)
+      if(existingUser){
+        res.send({message : "user already exits. Do not need insert again"})
+      }
+        else{
+          const result = await userCollection.insertOne(newUser);
+        res.send(result);
+        }
+    })
 
 // find one
  app.get("/bills", async(req,res) =>{
