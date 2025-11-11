@@ -90,6 +90,16 @@ app.get("/recent-bills", async (req, res) => {
   }
 });
 
+// get bill by id
+app.get('/bills/:id', async (req, res) => {
+  const id = req.params.id;
+    const bill = await billsCollection.findOne({ _id: new ObjectId(id) });
+    res.send(bill);
+  
+  
+});
+
+
 
 // delete
 app.delete('/bills/:id', async(req, res)=>{
