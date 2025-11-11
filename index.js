@@ -76,6 +76,21 @@ app.patch('/bills/:id', async(req, res)=>{
     res.send(result)
 })
 
+app.get("/recent-bills", async (req, res) => {
+  try {
+    const cursor = billsCollection
+      .find()
+      .sort({ date: -1 }) 
+      .limit(6);         
+    const result = await cursor.toArray();
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    
+  }
+});
+
+
 // delete
 app.delete('/bills/:id', async(req, res)=>{
   const id = req.params.id;
