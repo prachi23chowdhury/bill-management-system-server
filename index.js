@@ -26,6 +26,8 @@ async function run() {
     const db = client.db("bill_db");
 const billsCollection = db.collection("bills");
 const userCollection = db.collection("users");
+const paymentsCollection = db.collection("payments");
+
 
 
 
@@ -113,13 +115,12 @@ app.delete('/bills/:id', async(req, res)=>{
 })
  
 // payment
-// Get bills of a specific user
 app.get("/payments", async (req, res) => {
   try {
     const { email } = req.query;
     if (!email) return res.status(400).send({ message: "Email is required" });
 
-    const cursor = billsCollection.find({ email });
+    const cursor = paymentsCollection.find({ email }); 
     const result = await cursor.toArray();
     res.send(result);
   } catch (err) {
@@ -128,62 +129,39 @@ app.get("/payments", async (req, res) => {
   }
 });
 
-
-// insert
+// Insert 
 app.post("/payments", async (req, res) => {
   try {
-    const newBill = req.body; // email, billId, amount, title, category, username, address, phone, date
-    const result = await billsCollection.insertOne(newBill);
+    const newPayment = req.body; 
+    const result = await paymentsCollection.insertOne(newPayment); 
     res.send(result);
   } catch (err) {
     console.error(err);
-    res.status(500).send({ message: "Failed to insert bill" });
+    res.status(500).send({ message: "Failed to insert payment" });
   }
 });
 
-// delete
+// Delete payment
 app.delete("/payments/:id", async (req, res) => {
   const id = req.params.id;
   try {
-    const result = await billsCollection.deleteOne({ _id: new ObjectId(id) });
+    const result = await paymentsCollection.deleteOne({ _id: new ObjectId(id) });
     res.send(result);
   } catch (err) {
     console.error(err);
-    res.status(500).send({ message: "Failed to delete bill" });
+    res.status(500).send({ message: "Failed to delete payment" });
   }
 });
 
-// update
-app.patch("/payments/:id", async (req, res) => {
-  const id = req.params.id;
-  const updateData = req.body;
-
-  try {
-    const query = { _id: new ObjectId(id) };
-    const update = { $set: updateData };
-    const result = await billsCollection.updateOne(query, update);
-    res.send(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "Failed to update bill" });
-  }
-});
-
-
-// PUT /payments/:id - update a payment
-app.put('/payments/:id', async (req, res) => {
+// Update payment
+app.put("/payments/:id", async (req, res) => {
   try {
     const id = req.params.id;
     const updateData = req.body;
 
     const result = await paymentsCollection.updateOne(
       { _id: new ObjectId(id) },
-      { $set: {
-          amount: updateData.amount,
-          address: updateData.address,
-          phone: updateData.phone,
-          date: updateData.date
-      }}
+      { $set: updateData } 
     );
 
     if (result.matchedCount === 0) {
@@ -196,9 +174,6 @@ app.put('/payments/:id', async (req, res) => {
     res.status(500).send({ message: "Failed to update payment" });
   }
 });
-
-
-
 
 
     await client.db("admin").command({ ping: 1 });
