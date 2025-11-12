@@ -28,6 +28,9 @@ const billsCollection = db.collection("bills");
 const userCollection = db.collection("users");
 
 
+
+
+
     // users API 
      app.post("/users", async(req,res) =>{
       const  newUser =req.body;
@@ -108,6 +111,93 @@ app.delete('/bills/:id', async(req, res)=>{
   const result = await billsCollection.deleteOne(query);
     res.send(result)
 })
+ 
+// payment
+// Get bills of a specific user
+app.get("/payments", async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).send({ message: "Email is required" });
+
+    const cursor = billsCollection.find({ email });
+    const result = await cursor.toArray();
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "Failed to fetch user bills" });
+  }
+});
+
+
+// insert
+app.post("/payments", async (req, res) => {
+  try {
+    const newBill = req.body; // email, billId, amount, title, category, username, address, phone, date
+    const result = await billsCollection.insertOne(newBill);
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "Failed to insert bill" });
+  }
+});
+
+// delete
+app.delete("/payments/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const result = await billsCollection.deleteOne({ _id: new ObjectId(id) });
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "Failed to delete bill" });
+  }
+});
+
+// update
+app.patch("/payments/:id", async (req, res) => {
+  const id = req.params.id;
+  const updateData = req.body;
+
+  try {
+    const query = { _id: new ObjectId(id) };
+    const update = { $set: updateData };
+    const result = await billsCollection.updateOne(query, update);
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "Failed to update bill" });
+  }
+});
+
+
+// PUT /payments/:id - update a payment
+app.put('/payments/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const updateData = req.body;
+
+    const result = await paymentsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: {
+          amount: updateData.amount,
+          address: updateData.address,
+          phone: updateData.phone,
+          date: updateData.date
+      }}
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).send({ message: "Payment not found" });
+    }
+
+    res.send({ message: "Payment updated successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "Failed to update payment" });
+  }
+});
+
+
 
 
 
