@@ -26,7 +26,7 @@ async function run() {
     const db = client.db("bill_db");
 const billsCollection = db.collection("bills");
 const userCollection = db.collection("users");
-const paymentsCollection = db.collection("payments");
+
 
 
 
@@ -65,21 +65,7 @@ app.post("/bills", async(req, res) =>{
 })
 
 // update
-app.patch('/bills/:id', async(req, res)=>{
-  const id = req.params.id;
- const updateBill =req.body;
-  const query = { _id: new ObjectId(id)}
-  const update =
-  {
-    $set:{
-      name: updateBill.name,
-      price: updateBill.price
-    }
-  }
- 
-  const result = await billsCollection.updateOne(query,update);
-    res.send(result)
-})
+
 
 app.get("/recent-bills", async (req, res) => {
   try {
@@ -113,69 +99,56 @@ app.delete('/bills/:id', async(req, res)=>{
   const result = await billsCollection.deleteOne(query);
     res.send(result)
 })
- 
-// payment
-app.get("/payments", async (req, res) => {
-  try {
-    const { email } = req.query;
-    if (!email) return res.status(400).send({ message: "Email is required" });
 
-    const cursor = paymentsCollection.find({ email }); 
-    const result = await cursor.toArray();
-    res.send(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "Failed to fetch user bills" });
+
+// ✅ Get bills of the currently logged-in user
+app.get("/my-bills", async (req, res) => {
+  const email = req.query.email;
+  if (!email) {
+    return res.status(400).send({ message: "Email is required" });
   }
+  const query = { email };
+  const bills = await billsCollection.find(query).toArray();
+
+  // Calculate totals
+  const totalBillPaid = bills.length;
+  const totalAmount = bills.reduce(
+    (sum, bill) => sum + (parseFloat(bill.amount) || 0),
+    0
+  );
+
+  res.send({
+    totalBillPaid,
+    totalAmount,
+    bills,
+  });
 });
 
-// Insert 
-app.post("/payments", async (req, res) => {
-  try {
-    const newPayment = req.body; 
-    const result = await paymentsCollection.insertOne(newPayment); 
-    res.send(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "Failed to insert payment" });
-  }
-});
-
-// Delete payment
-app.delete("/payments/:id", async (req, res) => {
+// ✅ Update bill (amount, address, phone, date)
+app.patch("/bills/:id", async (req, res) => {
   const id = req.params.id;
-  try {
-    const result = await paymentsCollection.deleteOne({ _id: new ObjectId(id) });
-    res.send(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "Failed to delete payment" });
-  }
+  const updateBill = req.body;
+  const query = { _id: new ObjectId(id) };
+  const updateDoc = {
+    $set: {
+      amount: updateBill.amount,
+      address: updateBill.address,
+      phone: updateBill.phone,
+      date: updateBill.date,
+    },
+  };
+  const result = await billsCollection.updateOne(query, updateDoc);
+  res.send(result);
 });
 
-// Update payment
-app.put("/payments/:id", async (req, res) => {
-  try {
-    const id = req.params.id;
-    const updateData = req.body;
-
-    const result = await paymentsCollection.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: updateData } 
-    );
-
-    if (result.matchedCount === 0) {
-      return res.status(404).send({ message: "Payment not found" });
-    }
-
-    res.send({ message: "Payment updated successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "Failed to update payment" });
-  }
+// ✅ Download report for a specific user
+app.get("/download-report/:email", async (req, res) => {
+  const email = req.params.email;
+  const bills = await billsCollection.find({ email }).toArray();
+  res.send(bills);
 });
 
-
+ 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
