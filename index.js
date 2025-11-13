@@ -21,7 +21,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
 
-    await client.connect();
+    // await client.connect();
 
     const db = client.db("bill_db");
 const billsCollection = db.collection("bills");
@@ -49,6 +49,45 @@ const userCollection = db.collection("users");
         res.send(result);
         }
     })
+
+
+// 
+
+app.post('/users', async (req, res) => {
+      const user = req.body;
+
+      if (!user?.email) {
+        return res.status(400).send({ success: false, message: "Email is required!" });
+      }
+
+      try {
+        // user already exists
+        const existingUser = await userCollection.findOne({ email: user.email });
+        if (existingUser) {
+          return res.send({ success: true, message: "User already exists!", user: existingUser });
+        }
+
+        // Insert new user
+        const result = await userCollection.insertOne({
+          name: user.name,
+          email: user.email,
+          image: user.image || "",
+          createdAt: new Date(),
+        });
+
+        res.send({ success: true, message: "User added successfully!", result });
+      } catch (error) {
+        console.error("Error saving user:", error);
+        res.status(500).send({ success: false, message: "Server error while saving user." });
+      }
+    });
+
+    //all user
+    app.get('/users', async (req, res) => {
+      const users = await userCollection.find().toArray();
+      res.send(users);
+    });
+
 
 // find one
  app.get("/bills", async(req,res) =>{
@@ -81,6 +120,19 @@ app.get("/recent-bills", async (req, res) => {
   }
 });
 
+app.get("/add-bills", async (req, res) => {
+  try {
+    const cursor = billsCollection
+      .find()
+      .limit(8);         
+    const result = await cursor.toArray();
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    
+  }
+});
+
 // get bill by id
 app.get('/bills/:id', async (req, res) => {
   const id = req.params.id;
@@ -101,7 +153,6 @@ app.delete('/bills/:id', async(req, res)=>{
 })
 
 
-// ✅ Get bills of the currently logged-in user
 app.get("/my-bills", async (req, res) => {
   const email = req.query.email;
   if (!email) {
@@ -110,7 +161,7 @@ app.get("/my-bills", async (req, res) => {
   const query = { email };
   const bills = await billsCollection.find(query).toArray();
 
-  // Calculate totals
+
   const totalBillPaid = bills.length;
   const totalAmount = bills.reduce(
     (sum, bill) => sum + (parseFloat(bill.amount) || 0),
@@ -124,7 +175,7 @@ app.get("/my-bills", async (req, res) => {
   });
 });
 
-// ✅ Update bill (amount, address, phone, date)
+
 app.patch("/bills/:id", async (req, res) => {
   const id = req.params.id;
   const updateBill = req.body;
@@ -141,15 +192,8 @@ app.patch("/bills/:id", async (req, res) => {
   res.send(result);
 });
 
-// ✅ Download report for a specific user
-app.get("/download-report/:email", async (req, res) => {
-  const email = req.params.email;
-  const bills = await billsCollection.find({ email }).toArray();
-  res.send(bills);
-});
-
  
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
    
